@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>FinFlow</title>
+
+<!-- PWA / iOS meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinFlow">
+<meta name="theme-color" content="#0d0f14">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #0d0f14;
+  --surface: #161820;
+  --surface2: #1e2029;
+  --surface3: #252733;
+  --border: rgba(255,255,255,0.07);
+  --accent: #7c6af5;
+  --accent2: #4fcfb0;
+  --accent3: #f5a56a;
+  --danger: #f56a7c;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --safe-top: env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+  --nav-h: 72px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ── Status bar area ── */
+.status-bar {
+  height: var(--safe-top);
+  background: var(--bg);
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+}
+
+/* ── Top header ── */
+.top-header {
+  position: fixed;
+  top: var(--safe-top);
+  left: 0; right: 0;
+  height: 60px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 99;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.header-logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  letter-spacing: -0.3px;
+}
+.header-logo span { color: var(--accent); }
+
+.header-right { display: flex; gap: 10px; align-items: center; }
+
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-user-select: none;
+}
+.icon-btn:active { transform: scale(0.92); background: var(--surface3); }
+
+/* ── Scroll container ── */
+.scroll-wrap {
+  position: fixed;
+  top: calc(var(--safe-top) + 60px);
+  left: 0; right: 0;
+  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.page { padding: 20px 16px 8px; display: none; animation: pageIn 0.22s ease; }
+.page.active { display: block; }
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Bottom nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: rgba(22,24,32,0.95);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+  z-index: 99;
+}
+
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 6px 0;
+  -webkit-user-select: none;
+}
+
+.nav-tab-icon {
+  font-size: 22px;
+  transition: transform 0.15s;
+}
+
+.nav-tab-label {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+  transition: color 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.nav-tab.active .nav-tab-label { color: var(--accent); }
+.nav-tab.active .nav-tab-icon { transform: scale(1.15); }
+.nav-tab:active .nav-tab-icon { transform: scale(0.9); }
+
+/* ── Balance hero card ── */
+.hero-card {
+  background: linear-gradient(135deg, #1c1a38, #1a2830);
+  border: 1px solid rgba(124,106,245,0.2);
+  border-radius: 22px;
+  padding: 22px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  background: radial-gradient(circle, rgba(124,106,245,0.15), transparent 70%);
+  pointer-events: none;
+}
+
+.hero-label { font-size: 12px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
+
+.hero-amount {
+  font-family: 'DM Serif Display', serif;
+  font-size: 38px;
+  letter-spacing: -1px;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.hero-row { display: flex; gap: 12px; }
+
+.hero-stat {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.hero-stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.hero-stat-val { font-size: 16px; font-weight: 600; }
+.hero-stat-val.exp { color: var(--danger); }
+.hero-stat-val.inc { color: var(--accent2); }
+
+/* ── Section title ── */
+.sec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-top: 6px;
+}
+
+.sec-title { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+.sec-action { font-size: 12px; color: var(--accent); }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+/* ── Insight banner ── */
+.insight {
+  background: linear-gradient(135deg, rgba(124,106,245,0.1), rgba(79,207,176,0.06));
+  border: 1px solid rgba(124,106,245,0.18);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+
+.insight-ico { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.insight-t { font-size: 12.5px; font-weight: 600; color: var(--accent); margin-bottom: 3px; }
+.insight-b { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ── Transaction items ── */
+.tx {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.tx:last-child { border-bottom: none; }
+.tx:active { background: var(--surface2); }
+
+.tx-ico {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.tx-info { flex: 1; min-width: 0; }
+.tx-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.tx-right { text-align: right; flex-shrink: 0; }
+.tx-amt { font-size: 14px; font-weight: 600; }
+.tx-amt.neg { color: var(--danger); }
+.tx-amt.pos { color: var(--accent2); }
+.tx-date { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* ── Category bars ── */
+.cat-item { margin-bottom: 14px; }
+.cat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.cat-name { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
+.cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cat-val { font-size: 13px; font-weight: 600; }
+.bar-track { height: 5px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 99px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+/* ── Budget rings ── */
+.budget-grid-mob {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.budget-mob {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.budget-mob-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+.budget-mob-amounts { font-size: 11px; color: var(--muted); }
+.budget-mob-amounts strong { color: var(--text); }
+
+/* ── Savings ── */
+.saving-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 12px;
+}
+
+.saving-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.saving-name { font-size: 15px; font-weight: 600; }
+.saving-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.saving-pct { font-size: 20px; font-weight: 700; }
+
+.saving-bar-track { height: 7px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+.saving-bar-fill { height: 100%; border-radius: 99px; }
+.saving-amounts { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.saving-amounts strong { color: var(--text); }
+
+/* ── Add FAB ── */
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  right: 20px;
+  width: 52px; height: 52px;
+  border-radius: 16px;
+  background: var(--accent);
+  color: white;
+  font-size: 26px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(124,106,245,0.4);
+  cursor: pointer;
+  z-index: 98;
+  transition: all 0.15s;
+  border: none;
+  font-family: inherit;
+  line-height: 1;
+}
+.fab:active { transform: scale(0.92); box-shadow: 0 2px 12px rgba(124,106,245,0.3); }
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal-sheet {
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 20px calc(20px + var(--safe-bottom));
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: sheetUp 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.sheet-handle {
+  width: 40px; height: 4px;
+  background: var(--surface3);
+  border-radius: 99px;
+  margin: 0 auto 20px;
+}
+
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 20px; }
+
+.form-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: block; letter-spacing: 0.3px; }
+.form-group { margin-bottom: 14px; }
+
+.form-input, .form-select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 14px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-input:focus, .form-select:focus { border-color: var(--accent); }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.type-btn {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.type-btn.active-dep { background: rgba(245,106,124,0.15); border-color: var(--danger); color: var(--danger); }
+.type-btn.active-inc { background: rgba(79,207,176,0.15); border-color: var(--accent2); color: var(--accent2); }
+
+.btn-submit {
+  width: 100%;
+  padding: 15px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.15s;
+}
+.btn-submit:active { transform: scale(0.98); background: #8f7ef8; }
+
+/* ── Weekly mini chart ── */
+.mini-chart-wrap { padding: 16px 16px 4px; }
+.mini-chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 70px; }
+.mini-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mini-bar {
+  width: 100%;
+  border-radius: 6px;
+  background: rgba(124,106,245,0.3);
+  transition: height 0.8s cubic-bezier(0.4,0,0.2,1);
+  min-height: 4px;
+}
+.mini-bar.today { background: var(--accent); }
+.mini-bar-label { font-size: 10px; color: var(--muted); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  top: calc(var(--safe-top) + 70px);
+  left: 16px; right: 16px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── Search ── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 11px 14px;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.search-bar input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+.search-bar input::placeholder { color: var(--muted); }
+
+/* ── Sync animation ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinning { animation: spin 0.8s linear infinite; display: inline-block; }
+
+/* ── Scrollbar hide ── */
+.scroll-wrap::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div class="status-bar"></div>
+
+<header class="top-header">
+  <div class="header-logo">Fin<span>Flow</span></div>
+  <div class="header-right">
+    <div class="icon-btn" onclick="syncBank()" id="sync-btn" title="Synchroniser">⟳</div>
+    <div class="icon-btn" style="font-size:13px;color:var(--accent2);">●</div>
+  </div>
+</header>
+
+<!-- Scroll area -->
+<div class="scroll-wrap">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="page active" id="page-home">
+
+    <div class="hero-card">
+      <div class="hero-label">Solde disponible</div>
+      <div class="hero-amount" id="hero-balance">4 820 €</div>
+      <div class="hero-row">
+        <div class="hero-stat">
+          <div class="hero-stat-label">Dépenses</div>
+          <div class="hero-stat-val exp" id="hero-exp">1 248 €</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-label">Revenus</div>
+          <div class="hero-stat-val inc">2 400 €</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-label">Épargne</div>
+          <div class="hero-stat-val" style="color:var(--accent)" id="hero-sav">1 152 €</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <div class="insight-ico">✦</div>
+      <div>
+        <div class="insight-t">Opportunité d'économie</div>
+        <div class="insight-b">Vos abonnements streaming coûtent <strong style="color:var(--accent3)">32,97 €/mois</strong>. Résilier 1 service peu utilisé = <strong style="color:var(--accent2)">~120 €/an d'économies</strong>.</div>
+      </div>
+    </div>
+
+    <!-- Weekly chart -->
+    <div class="card" style="margin-bottom:14px;">
+      <div style="padding:14px 16px 6px;display:flex;justify-content:space-between;align-items:center;">
+        <div class="sec-title" style="margin:0;">7 derniers jours</div>
+        <div style="font-size:12px;color:var(--muted);">Total : <span style="color:var(--text);font-weight:600;">312 €</span></div>
+      </div>
+      <div class="mini-chart-wrap">
+        <div class="mini-chart-bars" id="mini-bars"></div>
+      </div>
+    </div>
+
+    <!-- Recent transactions -->
+    <div class="sec-header">
+      <div class="sec-title">Récents</div>
+      <div class="sec-action" onclick="goTab('transactions')">Voir tout →</div>
+    </div>
+    <div class="card" id="home-tx-list"></div>
+
+  </div><!-- /home -->
+
+  <!-- ── TRANSACTIONS ── -->
+  <div class="page" id="page-transactions">
+
+    <div class="search-bar">
+      <span style="color:var(--muted);font-size:16px;">⌕</span>
+      <input type="search" placeholder="Rechercher..." oninput="filterTx(this.value)">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;">
+      <div class="cat-filter-btn active" onclick="filterCat('',this)">Tout</div>
+      <div class="cat-filter-btn" onclick="filterCat('Alimentation',this)">🛒</div>
+      <div class="cat-filter-btn" onclick="filterCat('Transport',this)">🚗</div>
+      <div class="cat-filter-btn" onclick="filterCat('Loisirs',this)">🎬</div>
+      <div class="cat-filter-btn" onclick="filterCat('Abonnements',this)">📺</div>
+      <div class="cat-filter-btn" onclick="filterCat('Santé',this)">💊</div>
+      <div class="cat-filter-btn" onclick="filterCat('Logement',this)">🏠</div>
+    </div>
+
+    <div class="card" id="full-tx-list"></div>
+  </div>
+
+  <!-- ── BUDGETS ── -->
+  <div class="page" id="page-budgets">
+    <div style="margin-bottom:16px;">
+      <div class="sec-title" style="margin-bottom:4px;">Mars 2026</div>
+      <div style="font-size:12px;color:var(--muted);">Contrôlez vos enveloppes</div>
+    </div>
+    <div class="budget-grid-mob" id="budget-mob-grid"></div>
+  </div>
+
+  <!-- ── ÉPARGNE ── -->
+  <div class="page" id="page-savings">
+    <div style="margin-bottom:16px;">
+      <div class="sec-title" style="margin-bottom:4px;">Objectifs d'épargne</div>
+      <div style="font-size:12px;color:var(--muted);">Suivez vos projets financiers</div>
+    </div>
+    <div id="savings-mob-list"></div>
+  </div>
+
+  <!-- ── INSIGHTS ── -->
+  <div class="page" id="page-insights">
+    <div style="margin-bottom:16px;">
+      <div class="sec-title" style="margin-bottom:4px;">Insights IA</div>
+      <div style="font-size:12px;color:var(--muted);">Recommandations personnalisées</div>
+    </div>
+    <div id="insights-list"></div>
+
+    <div class="sec-header" style="margin-top:8px;">
+      <div class="sec-title">Répartition</div>
+    </div>
+    <div class="card" style="padding:16px;" id="cat-breakdown"></div>
+  </div>
+
+</div><!-- /scroll-wrap -->
+
+<!-- FAB -->
+<button class="fab" onclick="openModal()">+</button>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <div class="nav-tab active" id="tab-home" onclick="goTab('home')">
+    <div class="nav-tab-icon">◈</div>
+    <div class="nav-tab-label">Accueil</div>
+  </div>
+  <div class="nav-tab" id="tab-transactions" onclick="goTab('transactions')">
+    <div class="nav-tab-icon">↕</div>
+    <div class="nav-tab-label">Transactions</div>
+  </div>
+  <div class="nav-tab" id="tab-budgets" onclick="goTab('budgets')">
+    <div class="nav-tab-icon">◎</div>
+    <div class="nav-tab-label">Budgets</div>
+  </div>
+  <div class="nav-tab" id="tab-savings" onclick="goTab('savings')">
+    <div class="nav-tab-icon">◇</div>
+    <div class="nav-tab-label">Épargne</div>
+  </div>
+  <div class="nav-tab" id="tab-insights" onclick="goTab('insights')">
+    <div class="nav-tab-icon">✦</div>
+    <div class="nav-tab-label">Insights</div>
+  </div>
+</nav>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal()">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="modal-title">Nouvelle transaction</div>
+
+    <div class="type-toggle">
+      <button class="type-btn active-dep" id="btn-dep" onclick="setType('neg')">↑ Dépense</button>
+      <button class="type-btn" id="btn-inc" onclick="setType('pos')">↓ Revenu</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Montant (€)</label>
+      <input class="form-input" type="number" id="inp-amount" placeholder="0,00" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input class="form-input" type="text" id="inp-desc" placeholder="Ex : Courses Carrefour">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Catégorie</label>
+        <select class="form-select" id="inp-cat">
+          <option>🛒 Alimentation</option>
+          <option>🚗 Transport</option>
+          <option>🎬 Loisirs</option>
+          <option>💊 Santé</option>
+          <option>🏠 Logement</option>
+          <option>📺 Abonnements</option>
+          <option>👕 Shopping</option>
+          <option>💼 Revenus</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" type="date" id="inp-date">
+      </div>
+    </div>
+    <button class="btn-submit" onclick="addTransaction()">Enregistrer</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<style>
+.cat-filter-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+  -webkit-user-select: none;
+}
+.cat-filter-btn.active {
+  background: rgba(124,106,245,0.15);
+  border-color: rgba(124,106,245,0.3);
+  color: var(--accent);
+}
+.cat-filter-btn:active { transform: scale(0.93); }
+</style>
+
+<script>
+// ── Data ──
+let txType = 'neg';
+let transactions = [
+  { id:1, name:'Carrefour', cat:'🛒 Alimentation', amount:-68.50, date:'2026-03-22', type:'neg' },
+  { id:2, name:'Salaire', cat:'💼 Revenus', amount:2400, date:'2026-03-21', type:'pos' },
+  { id:3, name:'SNCF Paris-Lyon', cat:'🚗 Transport', amount:-45.00, date:'2026-03-20', type:'neg' },
+  { id:4, name:'Netflix', cat:'📺 Abonnements', amount:-13.99, date:'2026-03-19', type:'neg' },
+  { id:5, name:'Pharmacie', cat:'💊 Santé', amount:-22.80, date:'2026-03-18', type:'neg' },
+  { id:6, name:'Resto Sushi', cat:'🎬 Loisirs', amount:-38.50, date:'2026-03-17', type:'neg' },
+  { id:7, name:'Loyer + charges', cat:'🏠 Logement', amount:-850, date:'2026-03-15', type:'neg' },
+  { id:8, name:'Spotify', cat:'📺 Abonnements', amount:-9.99, date:'2026-03-14', type:'neg' },
+  { id:9, name:'Monoprix', cat:'🛒 Alimentation', amount:-32.40, date:'2026-03-13', type:'neg' },
+  { id:10, name:'Disney+', cat:'📺 Abonnements', amount:-8.99, date:'2026-03-12', type:'neg' },
+  { id:11, name:'Essence Total', cat:'🚗 Transport', amount:-62.00, date:'2026-03-11', type:'neg' },
+  { id:12, name:'Zara', cat:'👕 Shopping', amount:-45.00, date:'2026-03-10', type:'neg' },
+  { id:13, name:'Électricité EDF', cat:'🏠 Logement', amount:-95.00, date:'2026-03-09', type:'neg' },
+  { id:14, name:'Cinema UGC', cat:'🎬 Loisirs', amount:-11.80, date:'2026-03-08', type:'neg' },
+  { id:15, name:'Lidl', cat:'🛒 Alimentation', amount:-41.20, date:'2026-03-07', type:'neg' },
+];
+
+const catColors = {
+  '🛒 Alimentation':'#7c6af5','🚗 Transport':'#4fcfb0','🎬 Loisirs':'#f5a56a',
+  '💊 Santé':'#f56a7c','🏠 Logement':'#a8d8f0','📺 Abonnements':'#f5d56a',
+  '👕 Shopping':'#d06af5','💼 Revenus':'#4fcfb0'
+};
+const catBg = {
+  '🛒 Alimentation':'#1a1628','🚗 Transport':'#132820','🎬 Loisirs':'#28200e',
+  '💊 Santé':'#28100e','🏠 Logement':'#0e2028','📺 Abonnements':'#28270e',
+  '👕 Shopping':'#20082a','💼 Revenus':'#0a2820'
+};
+
+// ── Navigation ──
+function goTab(name) {
+  ['home','transactions','budgets','savings','insights'].forEach(p => {
+    document.getElementById('page-'+p).classList.toggle('active', p===name);
+    document.getElementById('tab-'+p)?.classList.toggle('active', p===name);
+  });
+  if (name==='transactions') renderFullTx(transactions);
+  if (name==='budgets') renderBudgets();
+  if (name==='savings') renderSavings();
+  if (name==='insights') renderInsights();
+  document.querySelector('.scroll-wrap').scrollTop = 0;
+}
+
+// ── Render helpers ──
+function txHTML(tx) {
+  const col = catColors[tx.cat]||'#aaa';
+  const bg  = catBg[tx.cat]||'#1a1a2e';
+  return `
+    <div class="tx">
+      <div class="tx-ico" style="background:${bg}">${tx.cat.split(' ')[0]}</div>
+      <div class="tx-info">
+        <div class="tx-name">${tx.name}</div>
+        <div class="tx-sub" style="color:${col}">${tx.cat}</div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-amt ${tx.type}">${tx.type==='neg'?'−':'+'}${Math.abs(tx.amount).toFixed(2)} €</div>
+        <div class="tx-date">${fmtDate(tx.date)}</div>
+      </div>
+    </div>`;
+}
+
+function renderHomeTx() {
+  document.getElementById('home-tx-list').innerHTML = transactions.slice(0,6).map(txHTML).join('');
+}
+
+function renderFullTx(list) {
+  document.getElementById('full-tx-list').innerHTML = list.length ? list.map(txHTML).join('') : '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Aucune transaction trouvée</div>';
+}
+
+function renderMiniChart() {
+  const vals = [42,18,95,23,67,38,29];
+  const days = ['L','M','M','J','V','S','D'];
+  const max = Math.max(...vals);
+  document.getElementById('mini-bars').innerHTML = vals.map((v,i)=>`
+    <div class="mini-bar-col">
+      <div class="mini-bar${i===6?' today':''}" style="height:${Math.max(6,(v/max)*66)}px"></div>
+      <div class="mini-bar-label">${days[i]}</div>
+    </div>`).join('');
+}
+
+function renderBudgets() {
+  const budgets = [
+    {label:'Alimentation',spent:142.10,limit:200,color:'#7c6af5'},
+    {label:'Transport',spent:107,limit:150,color:'#4fcfb0'},
+    {label:'Loisirs',spent:50.30,limit:100,color:'#f5a56a'},
+    {label:'Santé',spent:22.80,limit:80,color:'#f56a7c'},
+    {label:'Abonnements',spent:32.97,limit:50,color:'#f5d56a'},
+    {label:'Shopping',spent:45,limit:100,color:'#d06af5'},
+  ];
+  document.getElementById('budget-mob-grid').innerHTML = budgets.map(b=>{
+    const pct = Math.min(100,Math.round((b.spent/b.limit)*100));
+    const r=34, circ=2*Math.PI*r, dash=circ*pct/100;
+    const over = pct>=90;
+    return `<div class="budget-mob">
+      <svg width="84" height="84" viewBox="0 0 84 84">
+        <circle cx="42" cy="42" r="${r}" fill="none" stroke="#1e2029" stroke-width="7"/>
+        <circle cx="42" cy="42" r="${r}" fill="none" stroke="${over?'#f56a7c':b.color}" stroke-width="7"
+          stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ/4}" stroke-linecap="round"/>
+        <text x="42" y="46" text-anchor="middle" font-size="15" fill="${over?'#f56a7c':b.color}" font-family="DM Serif Display,serif">${pct}%</text>
+      </svg>
+      <div class="budget-mob-label">${b.label}</div>
+      <div class="budget-mob-amounts"><strong>${b.spent.toFixed(0)}€</strong> / ${b.limit}€</div>
+      ${over?`<div style="font-size:10px;color:#f56a7c;">⚠ Dépassement</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderSavings() {
+  const goals = [
+    {name:'✈ Vacances Été',desc:'Grèce · Juillet 2026',current:640,target:1500,color:'#4fcfb0'},
+    {name:'💻 MacBook Pro',desc:'Renouvellement ordi',current:820,target:2000,color:'#7c6af5'},
+    {name:'🛡 Fonds urgence',desc:'3 mois de charges',current:3200,target:7200,color:'#f5a56a'},
+  ];
+  document.getElementById('savings-mob-list').innerHTML = goals.map(g=>{
+    const pct=Math.round((g.current/g.target)*100);
+    return `<div class="saving-card">
+      <div class="saving-top">
+        <div><div class="saving-name">${g.name}</div><div class="saving-desc">${g.desc}</div></div>
+        <div class="saving-pct" style="color:${g.color}">${pct}%</div>
+      </div>
+      <div class="saving-bar-track"><div class="saving-bar-fill" style="width:${pct}%;background:${g.color}"></div></div>
+      <div class="saving-amounts"><strong>${g.current.toLocaleString('fr-FR')} €</strong><span>objectif ${g.target.toLocaleString('fr-FR')} €</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderInsights() {
+  const items = [
+    {ico:'📺',title:'Abonnements redondants',color:'#f5a56a',text:'Netflix + Spotify + Disney+ = 32,97 €/mois. Résilier 1 service peu utilisé = 120 €/an.'},
+    {ico:'🛒',title:'Courses — optimisable',color:'#7c6af5',text:'Passer en drive ou chez Lidl réduirait votre budget alimentation de ~25 %, soit 35 €/mois.'},
+    {ico:'⛽',title:'Transport élevé',color:'#f56a7c',text:'107 € ce mois. Covoiturage ou pass Navigo réduirait ce poste de 40 €/mois.'},
+    {ico:'💡',title:'Épargne automatique',color:'#4fcfb0',text:'Virement de 200 € le jour du salaire → fonds d\'urgence atteint en 10 mois sans effort.'},
+  ];
+  document.getElementById('insights-list').innerHTML = items.map(i=>`
+    <div class="insight" style="border-color:${i.color}22;background:linear-gradient(135deg,${i.color}0d,transparent);">
+      <div class="insight-ico">${i.ico}</div>
+      <div><div class="insight-t" style="color:${i.color}">${i.title}</div><div class="insight-b">${i.text}</div></div>
+    </div>`).join('');
+
+  const expenses = transactions.filter(t=>t.type==='neg');
+  const total = expenses.reduce((a,t)=>a+Math.abs(t.amount),0);
+  const bycat = {};
+  expenses.forEach(t=>{bycat[t.cat]=(bycat[t.cat]||0)+Math.abs(t.amount);});
+  const sorted = Object.entries(bycat).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('cat-breakdown').innerHTML = sorted.map(([cat,amt])=>{
+    const pct=Math.round((amt/total)*100);
+    const col=catColors[cat]||'#7c6af5';
+    return `<div class="cat-item">
+      <div class="cat-row">
+        <div class="cat-name"><span class="cat-dot" style="background:${col}"></span>${cat}</div>
+        <div class="cat-val" style="color:${col}">${amt.toFixed(0)} €</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Filters ──
+let activeCatFilter = '';
+function filterTx(q) {
+  let list = transactions;
+  if (activeCatFilter) list = list.filter(t=>t.cat.includes(activeCatFilter));
+  if (q) list = list.filter(t=>t.name.toLowerCase().includes(q.toLowerCase()));
+  renderFullTx(list);
+}
+
+function filterCat(cat, btn) {
+  activeCatFilter = cat;
+  document.querySelectorAll('.cat-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTx(document.querySelector('.search-bar input')?.value || '');
+}
+
+// ── Modal ──
+function openModal() {
+  document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function setType(t) {
+  txType = t;
+  document.getElementById('btn-dep').className = 'type-btn' + (t==='neg'?' active-dep':'');
+  document.getElementById('btn-inc').className = 'type-btn' + (t==='pos'?' active-inc':'');
+}
+
+function addTransaction() {
+  const amount = parseFloat(document.getElementById('inp-amount').value);
+  const desc   = document.getElementById('inp-desc').value.trim();
+  const cat    = document.getElementById('inp-cat').value;
+  const date   = document.getElementById('inp-date').value;
+  if (!amount || !desc) { showToast('⚠ Remplis tous les champs'); return; }
+
+  const tx = { id:Date.now(), name:desc, cat, amount:txType==='neg'?-amount:amount, date, type:txType };
+  transactions.unshift(tx);
+  saveData();
+  renderHomeTx();
+  updateHero();
+  closeModal();
+  document.getElementById('inp-amount').value='';
+  document.getElementById('inp-desc').value='';
+  showToast('✓ Transaction enregistrée !');
+}
+
+// ── KPIs ──
+function updateHero() {
+  const exp = transactions.filter(t=>t.type==='neg').reduce((a,t)=>a+Math.abs(t.amount),0);
+  const inc = transactions.filter(t=>t.type==='pos').reduce((a,t)=>a+t.amount,0);
+  document.getElementById('hero-exp').textContent = exp.toFixed(0)+' €';
+  document.getElementById('hero-sav').textContent = (inc-exp).toFixed(0)+' €';
+}
+
+// ── Sync ──
+function syncBank() {
+  const btn = document.getElementById('sync-btn');
+  btn.classList.add('spinning');
+  setTimeout(()=>{
+    btn.classList.remove('spinning');
+    showToast('✓ Synchronisation terminée');
+  }, 2000);
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ── Persist data ──
+function saveData() {
+  try { localStorage.setItem('ff_tx', JSON.stringify(transactions)); } catch(e){}
+}
+function loadData() {
+  try {
+    const d = localStorage.getItem('ff_tx');
+    if (d) transactions = JSON.parse(d);
+  } catch(e){}
+}
+
+// ── Helpers ──
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+}
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ── Init ──
+loadData();
+renderHomeTx();
+renderMiniChart();
+updateHero();
+</script>
+</body>
+</html>
